@@ -50,7 +50,7 @@ if (fs.existsSync(FILE)) {
         stock = {
             sporex: Number(data.sporex) || 0,
             heroine: Number(data.heroine) || 0,
-            argentSale: Number(data.argentSale) || 0
+            argentSale: Number(data.argentSale || data.argentsale) || 0
         };
 
     } catch (e) {
@@ -154,32 +154,37 @@ client.on("messageCreate", async (message) => {
         console.log("📩 PART:", clean);
 
         // 🔥 MATCH ROBUSTE (support accents + espaces + multi mots)
-        const match = clean.match(/(\d+)\s*x?\s*([a-zA-ZÀ-ÿ\s]+)/i);
-        if (!match) return;
+const match = clean.match(/(\d+)\s*x\s*(.+)/i);
+if (!match) return;
 
-        const amount = parseInt(match[1]);
-        const itemText = match[2].toLowerCase();
+const amount = parseInt(match[1]);
+const itemText = match[2].toLowerCase();
 
-        let item = null;
+// nettoyage IMPORTANT
+const itemClean = itemText
+    .replace(/a deposé|a depose|a retiré|a retire/gi, "")
+    .trim();
 
-        // 🔥 IMPORTANT : on détecte large
-        if (itemText.includes("sporex")) item = "sporex";
-        else if (itemText.includes("heroine")) item = "heroine";
-        else if (itemText.includes("argent")) item = "argentSale";
+let item = null;
 
-        if (!item) return;
+if (itemClean.includes("sporex")) item = "sporex";
+else if (itemClean.includes("heroine")) item = "heroine";
+else if (itemClean.includes("argent")) item = "argentSale";
+
+if (!item) return;
 
 const isRemove = /(retir|retire|retiré)/i.test(clean);
 const isAdd = /(depos|depose|posé|pose|a deposé|a depose)/i.test(clean);
 
-        if (stock[item] === undefined) stock[item] = 0;
+stock[item] = Number(stock[item]) || 0;
 
-        if (isRemove) stock[item] -= amount;
-        else if (isAdd) stock[item] += amount;
+if (isRemove) {
+    stock[item] -= amount;
+} else if (isAdd) {
+    stock[item] += amount;
+}
 
-        console.log("✅ UPDATE:", item, stock[item]);
-
-        changed = true;
+changed = true;
     };
 
     // ===== CONTENT =====
@@ -247,7 +252,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .addFields(
                         { name: "💊 SporeX", value: `${Number(stock.sporex) || 0}`, inline: true },
                         { name: "🧪 Heroine", value: `${Number(stock.heroine) || 0}`, inline: true },
-                        { name: "💰 Argent Sale", value: `${Number(stock.argentSaley) || 0}`, inline: true }
+                        { name: "💰 Argent Sale", value: `${Number(stock.argentSale) || 0}`, inline: true },
                     )
             ]
         });
