@@ -37,7 +37,7 @@ const ALLOWED_COMMAND_CHANNEL_ID = "1508485239683416195";
 // ===== STOCK =====
 const FILE = "./stock.json";
 
-let stock = { sporex: 0, heroine: 0 };
+let stock = { sporex: 0, heroine: 0, argentSale: 0 };
 
 if (fs.existsSync(FILE)) {
     stock = JSON.parse(fs.readFileSync(FILE));
