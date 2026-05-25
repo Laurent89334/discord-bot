@@ -27,7 +27,8 @@ const TOKEN = process.env.TOKEN;
 
 const TARGET_WEBHOOKS = [
     "1506738453776306278",
-    "1507716876170690663"
+    "1507716876170690663",
+    "1506672783797518368"
 ];
 
 const LOG_CHANNEL_ID = "1508485239683416195";
@@ -89,8 +90,17 @@ function processLine(line) {
     const itemRaw = match[2].toLowerCase();
 
     let item = null;
-    if (itemRaw.includes("sporex")) item = "sporex";
-    if (itemRaw.includes("heroine")) item = "heroine";
+
+    if (itemText.includes("sporex")) {
+        item = "sporex";
+    }
+    else if (itemText.includes("heroine")) {
+      item = "heroine";
+    }
+    else if (itemText.includes("argent sale")) {
+       item = "argentSale";
+    }
+
     if (!item) return;
 
     const isRemove = /retir|retire|retiré/i.test(line);
@@ -232,7 +242,7 @@ client.on("messageCreate", async (message) => {
                     .setTitle("📦 Stock update")
                     .setColor(0x00ff99)
                     .setDescription(
-                        `💊 SporeX: **${stock.sporex}**\n🧪 Heroine: **${stock.heroine}**`
+                        `💊 SporeX: **${stock.sporex}**\n🧪 Heroine: **${stock.heroine}**\n💰 Argent Sale: **${stock.argentSale}**`
                     )
             ]
         });
