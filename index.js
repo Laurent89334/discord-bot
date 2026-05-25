@@ -37,10 +37,25 @@ const ALLOWED_COMMAND_CHANNEL_ID = "1508485239683416195";
 // ===== STOCK =====
 const FILE = "./stock.json";
 
-let stock = { sporex: 0, heroine: 0, argentSale: 0 };
+let stock = {
+    sporex: 0,
+    heroine: 0,
+    argentSale: 0
+};
 
 if (fs.existsSync(FILE)) {
-    stock = JSON.parse(fs.readFileSync(FILE));
+    try {
+        const data = JSON.parse(fs.readFileSync(FILE));
+
+        stock = {
+            sporex: Number(data.sporex) || 0,
+            heroine: Number(data.heroine) || 0,
+            argentSale: Number(data.argentSale) || 0
+        };
+
+    } catch (e) {
+        stock = { sporex: 0, heroine: 0, argentSale: 0 };
+    }
 }
 
 function saveStock() {
@@ -53,63 +68,6 @@ function normalize(text) {
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "");
-}
-
-// ===== EXTRACT ALL TEXT =====
-function extractText(message) {
-
-    let parts = [];
-
-    if (message.content) parts.push(message.content);
-
-    if (message.embeds?.length) {
-        for (const e of message.embeds) {
-
-            if (e.title) parts.push(e.title);
-            if (e.description) parts.push(e.description);
-
-            if (e.fields?.length) {
-                for (const f of e.fields) {
-                    parts.push(`${f.name} ${f.value}`);
-                }
-            }
-        }
-    }
-
-    return normalize(parts.join(" "));
-}
-
-// ===== PROCESS LINE (FIX FINAL ROBUSTE) =====
-function processLine(line) {
-
-    // 👉 match: 1x heroine / 10x sporex etc
-    const match = line.match(/(\d+)\s*x\s*(.+)/i);
-    if (!match) return;
-
-    const amount = parseInt(match[1]);
-    const itemRaw = match[2].toLowerCase();
-
-    let item = null;
-
-    if (itemText.includes("sporex")) {
-        item = "sporex";
-    }
-    else if (itemText.includes("heroine")) {
-      item = "heroine";
-    }
-    else if (itemText.includes("argent sale")) {
-       item = "argentSale";
-    }
-
-    if (!item) return;
-
-    const isRemove = /retir|retire|retiré/i.test(line);
-    const isAdd = /depos|depots|depose|posé|pose/i.test(line);
-
-    if (!stock[item]) stock[item] = 0;
-
-    if (isRemove) stock[item] -= amount;
-    else if (isAdd) stock[item] += amount;
 }
 
 // ===== BOT =====
@@ -132,8 +90,13 @@ const commands = [
         .setDescription("Ajouter du stock")
         .addStringOption(o =>
             o.setName("item")
-                .setDescription("sporex ou heroine")
+                .setDescription("Choisir un item")
                 .setRequired(true)
+                .addChoices(
+                    { name: "SporeX", value: "sporex" },
+                    { name: "Heroine", value: "heroine" },
+                    { name: "Argent Sale", value: "argentSale" }
+                )
         )
         .addIntegerOption(o =>
             o.setName("amount")
@@ -146,8 +109,13 @@ const commands = [
         .setDescription("Retirer du stock")
         .addStringOption(o =>
             o.setName("item")
-                .setDescription("sporex ou heroine")
+                .setDescription("Choisir un item")
                 .setRequired(true)
+                .addChoices(
+                    { name: "SporeX", value: "sporex" },
+                    { name: "Heroine", value: "heroine" },
+                    { name: "Argent Sale", value: "argentSale" }
+                )
         )
         .addIntegerOption(o =>
             o.setName("amount")
@@ -180,52 +148,55 @@ client.on("messageCreate", async (message) => {
     let changed = false;
 
     const handle = (text) => {
-
         if (!text) return;
 
         const clean = normalize(text);
         console.log("📩 PART:", clean);
 
-        // ✅ FIX IMPORTANT : accepte tout après x
-        const match = clean.match(/(\d+)\s*x\s*(.+)/i);
+        // 🔥 MATCH ROBUSTE (support accents + espaces + multi mots)
+        const match = clean.match(/(\d+)\s*x?\s*([a-zA-ZÀ-ÿ\s]+)/i);
         if (!match) return;
 
         const amount = parseInt(match[1]);
-        const itemText = match[2];
+        const itemText = match[2].toLowerCase();
 
         let item = null;
 
-        // ✅ STRICT MATCH PROPRE
+        // 🔥 IMPORTANT : on détecte large
         if (itemText.includes("sporex")) item = "sporex";
         else if (itemText.includes("heroine")) item = "heroine";
+        else if (itemText.includes("argent")) item = "argentSale";
 
         if (!item) return;
 
-        const isRemove = /retir/.test(clean);
-        const isAdd = /depos|pose/.test(clean);
+const isRemove = /(retir|retire|retiré)/i.test(clean);
+const isAdd = /(depos|depose|posé|pose|a deposé|a depose)/i.test(clean);
 
-        if (!stock[item]) stock[item] = 0;
+        if (stock[item] === undefined) stock[item] = 0;
 
         if (isRemove) stock[item] -= amount;
         else if (isAdd) stock[item] += amount;
 
-        console.log("✅ STOCK UPDATE:", item, stock[item]);
+        console.log("✅ UPDATE:", item, stock[item]);
 
         changed = true;
     };
 
-    // 👉 content
+    // ===== CONTENT =====
     handle(message.content);
 
-    // 👉 embeds
-    for (const embed of message.embeds) {
-        handle(embed.title);
-        handle(embed.description);
+    // ===== EMBEDS (FIX IMPORTANT) =====
+    if (message.embeds?.length) {
+        for (const embed of message.embeds) {
 
-        if (embed.fields) {
-            for (const f of embed.fields) {
-                handle(f.name);
-                handle(f.value);
+            handle(embed.title);
+            handle(embed.description);
+
+            if (embed.fields?.length) {
+                for (const f of embed.fields) {
+                    handle(f.name);
+                    handle(f.value);
+                }
             }
         }
     }
@@ -242,19 +213,22 @@ client.on("messageCreate", async (message) => {
                     .setTitle("📦 Stock update")
                     .setColor(0x00ff99)
                     .setDescription(
-                        `💊 SporeX: **${stock.sporex}**\n🧪 Heroine: **${stock.heroine}**\n💰 Argent Sale: **${stock.argentSale}**`
-                    )
+    [
+        `💊 SporeX: **${Number(stock.sporex) || 0}**`,
+        `🧪 Heroine: **${Number(stock.heroine) || 0}**`,
+        `💰 Argent Sale: **${Number(stock.argentSale) || 0}**`
+    ].join("\n")
+)
             ]
         });
     }
 });
 
-// ===== SLASH COMMAND =====
+// ===== COMMANDS =====
 client.on(Events.InteractionCreate, async (interaction) => {
 
     if (!interaction.isChatInputCommand()) return;
 
-    // 🔒 salon lock
     if (interaction.channelId !== ALLOWED_COMMAND_CHANNEL_ID) {
         return interaction.reply({
             content: "❌ Commande uniquement dans le salon autorisé.",
@@ -271,22 +245,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .setTitle("📦 Stock actuel")
                     .setColor(0x00ff99)
                     .addFields(
-                        { name: "💊 SporeX", value: `${stock.sporex}`, inline: true },
-                        { name: "🧪 Heroine", value: `${stock.heroine}`, inline: true }
+                        { name: "💊 SporeX", value: `${Number(stock.sporex) || 0}`, inline: true },
+                        { name: "🧪 Heroine", value: `${Number(stock.heroine) || 0}`, inline: true },
+                        { name: "💰 Argent Sale", value: `${Number(stock.argentSaley) || 0}`, inline: true }
                     )
             ]
         });
     }
 
-    // ➕ STOCK ADD
+    // ➕ ADD
     if (interaction.commandName === "stockadd") {
 
-        const item = interaction.options.getString("item").toLowerCase();
+        const item = interaction.options.getString("item");
         const amount = interaction.options.getInteger("amount");
 
-        if (!stock[item]) stock[item] = 0;
+        if (stock[item] === undefined) stock[item] = 0;
 
-        stock[item] += amount;
+        stock[item] = (stock[item] || 0) + amount;
         saveStock();
 
         return interaction.reply({
@@ -297,19 +272,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .addFields(
                         { name: "Item", value: item, inline: true },
                         { name: "Ajouté", value: `${amount}`, inline: true },
-                        { name: "Total", value: `${stock[item]}`, inline: true }
+                        { name: "Total", value: `${stock[item]}` }
                     )
             ]
         });
     }
 
-    // ➖ STOCK REMOVE
+    // ➖ REMOVE
     if (interaction.commandName === "stockremove") {
 
-        const item = interaction.options.getString("item").toLowerCase();
+        const item = interaction.options.getString("item");
         const amount = interaction.options.getInteger("amount");
 
-        if (!stock[item]) stock[item] = 0;
+        if (stock[item] === undefined) stock[item] = 0;
 
         stock[item] -= amount;
         saveStock();
@@ -322,7 +297,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     .addFields(
                         { name: "Item", value: item, inline: true },
                         { name: "Retiré", value: `${amount}`, inline: true },
-                        { name: "Total", value: `${stock[item]}`, inline: true }
+                        { name: "Total", value: `${stock[item]}` }
                     )
             ]
         });
