@@ -82,7 +82,7 @@ function extractText(message) {
 function processLine(line) {
 
     // 👉 match: 1x heroine / 10x sporex etc
-    const match = line.match(/(\d+)\s*x\s*([a-zA-Z]+)/i);
+    const match = line.match(/(\d+)\s*x\s*(.+)/i);
     if (!match) return;
 
     const amount = parseInt(match[1]);
@@ -169,19 +169,27 @@ client.on("messageCreate", async (message) => {
 
     let changed = false;
 
-    const process = (text) => {
+    const handle = (text) => {
 
         if (!text) return;
 
         const clean = normalize(text);
-
         console.log("📩 PART:", clean);
 
-        const match = clean.match(/(\d+)\s*x\s*(sporex|heroine)/i);
+        // ✅ FIX IMPORTANT : accepte tout après x
+        const match = clean.match(/(\d+)\s*x\s*(.+)/i);
         if (!match) return;
 
         const amount = parseInt(match[1]);
-        const item = match[2].toLowerCase();
+        const itemText = match[2];
+
+        let item = null;
+
+        // ✅ STRICT MATCH PROPRE
+        if (itemText.includes("sporex")) item = "sporex";
+        else if (itemText.includes("heroine")) item = "heroine";
+
+        if (!item) return;
 
         const isRemove = /retir/.test(clean);
         const isAdd = /depos|pose/.test(clean);
@@ -191,22 +199,23 @@ client.on("messageCreate", async (message) => {
         if (isRemove) stock[item] -= amount;
         else if (isAdd) stock[item] += amount;
 
+        console.log("✅ STOCK UPDATE:", item, stock[item]);
+
         changed = true;
     };
 
-    // 🔥 1. CONTENT
-    process(message.content);
+    // 👉 content
+    handle(message.content);
 
-    // 🔥 2. EACH EMBED INDIVIDUALLY (IMPORTANT FIX)
+    // 👉 embeds
     for (const embed of message.embeds) {
-
-        process(embed.title);
-        process(embed.description);
+        handle(embed.title);
+        handle(embed.description);
 
         if (embed.fields) {
             for (const f of embed.fields) {
-                process(f.name);
-                process(f.value);
+                handle(f.name);
+                handle(f.value);
             }
         }
     }
@@ -217,9 +226,16 @@ client.on("messageCreate", async (message) => {
 
     const ch = await client.channels.fetch(LOG_CHANNEL_ID);
     if (ch) {
-        ch.send(`📦 Stock :
-- sporex: ${stock.sporex}
-- heroine: ${stock.heroine}`);
+        ch.send({
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle("📦 Stock update")
+                    .setColor(0x00ff99)
+                    .setDescription(
+                        `💊 SporeX: **${stock.sporex}**\n🧪 Heroine: **${stock.heroine}**`
+                    )
+            ]
+        });
     }
 });
 
