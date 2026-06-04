@@ -48,7 +48,8 @@ stock = {
 
 if (fs.existsSync(FILE)) {
     try {
-        const data = JSON.parse(fs.readFileSync(FILE));
+        const raw = fs.readFileSync(FILE);
+        const data = JSON.parse(raw);
 
         stock = {
             sporex: Number(data.sporex) || 0,
