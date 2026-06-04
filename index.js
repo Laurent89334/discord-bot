@@ -220,22 +220,25 @@ const handle = (text) => {
     handle(message.content);
 
     // EMBEDS
-    if (message.embeds?.length) {
-        for (const embed of message.embeds) {
+if (message.embeds?.length) {
+    for (const embed of message.embeds) {
 
-            const data = embed.data ?? embed;
+        const title = embed.title ?? embed.data?.title;
+        const description = embed.description ?? embed.data?.description;
 
-            handle(data.title);
-            handle(data.description);
+        handle(title);
+        handle(description);
 
-            if (data.fields?.length) {
-                for (const f of data.fields) {
-                    handle(f.name);
-                    handle(f.value);
-                }
+        const fields = embed.fields ?? embed.data?.fields;
+
+        if (fields?.length) {
+            for (const f of fields) {
+                handle(f.name);
+                handle(f.value);
             }
         }
     }
+}
 
     if (!changed) return;
 
