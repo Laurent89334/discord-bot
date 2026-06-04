@@ -164,60 +164,72 @@ client.on("messageCreate", async (message) => {
     if (!message.webhookId) return;
     if (!TARGET_WEBHOOKS.includes(message.webhookId)) return;
 
+    if (message.id && global.processedMessages?.has(message.id)) return;
+    if (!global.processedMessages) global.processedMessages = new Set();
+    global.processedMessages.add(message.id);
+
+    if (global.processedMessages.size > 1000) {
+        global.processedMessages.clear();
+    }
+
     let changed = false;
 
-    const handle = (text) => {
-        if (!text) return;
+const handle = (text) => {
+    if (!text) return;
 
-        const clean = normalize(text);
-        console.log("📩 PART:", clean);
+    const clean = normalize(text);
 
-        // 🔥 MATCH ROBUSTE (support accents + espaces + multi mots)
-const match = clean.match(/(\d+)\s*x\s*(.+)/i);
-if (!match) return;
+    const match = clean.match(/(\d+)\s*x\s*(.+)/i);
+    if (!match) return;
 
-const amount = parseInt(match[1]);
-const itemText = match[2].toLowerCase();
+    const amount = parseInt(match[1]);
 
-// nettoyage IMPORTANT
-const itemClean = itemText
-    .replace(/a deposé|a depose|a retiré|a retire/gi, "")
-    .trim();
+    let itemText = match[2].toLowerCase();
 
-let item = null;
+    itemText = itemText
+        .replace(/\*\*.*?\*\*/g, "")
+        .replace(/a deposé|a depose|a retiré|a retire/gi, "")
+        .trim();
 
-if (itemClean.includes("sporex")) item = "sporex";
-else if (itemClean.includes("heroine")) item = "heroine";
-else if (itemClean.includes("argent")) item = "argentSale";
+    let item = null;
 
-if (!item) return;
+    // 💊 ITEMS CLASSIQUES
+    if (itemText.includes("sporex")) item = "sporex";
+    else if (itemText.includes("heroine")) item = "heroine";
+    else if (itemText.includes("argent")) item = "argentSale";
 
-const isRemove = /(retir|retire|retiré)/i.test(clean);
-const isAdd = /(depos|depose|posé|pose|a deposé|a depose)/i.test(clean);
+    // 🍄 PSILOCYBES (FIX IMPORTANT)
+    else if (itemText.includes("psilocybe rouge")) item = "psilocybeRouge";
+    else if (itemText.includes("psilocybe violet")) item = "psilocybeViolet";
+    else if (itemText.includes("psilocybe vert")) item = "psilocybeVert";
 
-stock[item] = Number(stock[item]) || 0;
+    if (!item) return;
 
-if (isRemove) {
-    stock[item] -= amount;
-} else if (isAdd) {
-    stock[item] += amount;
-}
+    const isRemove = /(retir|retire|retiré)/i.test(clean);
+    const isAdd = /(depos|depose|posé|pose)/i.test(clean);
 
-changed = true;
-    };
+    stock[item] = Number(stock[item]) || 0;
 
-    // ===== CONTENT =====
+    if (isRemove) stock[item] -= amount;
+    else if (isAdd) stock[item] += amount;
+
+    changed = true;
+};
+
+    // CONTENT
     handle(message.content);
 
-    // ===== EMBEDS (FIX IMPORTANT) =====
+    // EMBEDS
     if (message.embeds?.length) {
         for (const embed of message.embeds) {
 
-            handle(embed.title);
-            handle(embed.description);
+            const data = embed.data ?? embed;
 
-            if (embed.fields?.length) {
-                for (const f of embed.fields) {
+            handle(data.title);
+            handle(data.description);
+
+            if (data.fields?.length) {
+                for (const f of data.fields) {
                     handle(f.name);
                     handle(f.value);
                 }
@@ -230,6 +242,7 @@ changed = true;
     saveStock();
 
     const ch = await client.channels.fetch(LOG_CHANNEL_ID);
+
     if (ch) {
         ch.send({
             embeds: [
@@ -237,15 +250,15 @@ changed = true;
                     .setTitle("📦 Stock update")
                     .setColor(0x00ff99)
                     .setDescription(
-    [
-        `💊 SporeX: **${Number(stock.sporex) || 0}**`,
-        `🧪 Heroine: **${Number(stock.heroine) || 0}**`,
-        `💰 Argent Sale: **${Number(stock.argentSale) || 0}**`
-        `🍄 Psilocybe Rouge: **${Number(stock.psilocybeRouge) || 0}**`,
-        `🍄 Psilocybe Violet: **${Number(stock.psilocybeViolet) || 0}**`,
-        `🍄 Psilocybe Vert: **${Number(stock.psilocybeVert) || 0}**`
-    ].join("\n")
-)
+                        [
+                            `💊 SporeX: **${stock.sporex || 0}**`,
+                            `🧪 Heroine: **${stock.heroine || 0}**`,
+                            `💰 Argent Sale: **${stock.argentSale || 0}**`,
+                            `🍄 Psilocybe Rouge: **${stock.psilocybeRouge || 0}**`,
+                            `🍄 Psilocybe Violet: **${stock.psilocybeViolet || 0}**`,
+                            `🍄 Psilocybe Vert: **${stock.psilocybeVert || 0}**`
+                        ].join("\n")
+                    )
             ]
         });
     }
@@ -264,21 +277,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     // 📦 STOCK
-    if (interaction.commandName === "stock") {
+if (interaction.commandName === "stock") {
 
-        return interaction.reply({
-            embeds: [
-                new EmbedBuilder()
-                    .setTitle("📦 Stock actuel")
-                    .setColor(0x00ff99)
-                    .addFields(
-                        { name: "💊 SporeX", value: `${Number(stock.sporex) || 0}`, inline: true },
-                        { name: "🧪 Heroine", value: `${Number(stock.heroine) || 0}`, inline: true },
-                        { name: "💰 Argent Sale", value: `${Number(stock.argentSale) || 0}`, inline: true },
-                    )
-            ]
-        });
-    }
+    const freshStock = {
+        sporex: Number(stock.sporex) || 0,
+        heroine: Number(stock.heroine) || 0,
+        argentSale: Number(stock.argentSale) || 0,
+        psilocybeRouge: Number(stock.psilocybeRouge) || 0,
+        psilocybeViolet: Number(stock.psilocybeViolet) || 0,
+        psilocybeVert: Number(stock.psilocybeVert) || 0
+    };
+
+    return interaction.reply({
+        embeds: [
+            new EmbedBuilder()
+                .setTitle("📦 Stock actuel")
+                .setColor(0x00ff99)
+                .addFields(
+                    { name: "💊 SporeX", value: `${freshStock.sporex}`, inline: true },
+                    { name: "🧪 Heroine", value: `${freshStock.heroine}`, inline: true },
+                    { name: "💰 Argent Sale", value: `${freshStock.argentSale}`, inline: true },
+                    { name: "🍄 Psilocybe Rouge", value: `${freshStock.psilocybeRouge}`, inline: true },
+                    { name: "🍄 Psilocybe Violet", value: `${freshStock.psilocybeViolet}`, inline: true },
+                    { name: "🍄 Psilocybe Vert", value: `${freshStock.psilocybeVert}`, inline: true },
+                )
+        ]
+    });
+}
 
     // ➕ ADD
     if (interaction.commandName === "stockadd") {
