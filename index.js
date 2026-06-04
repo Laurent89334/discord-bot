@@ -53,11 +53,21 @@ if (fs.existsSync(FILE)) {
         stock = {
             sporex: Number(data.sporex) || 0,
             heroine: Number(data.heroine) || 0,
-            argentSale: Number(data.argentSale || data.argentsale) || 0
+            argentSale: Number(data.argentSale || data.argentsale) || 0,
+            psilocybeRouge: Number(data.psilocybeRouge) || 0,
+            psilocybeViolet: Number(data.psilocybeViolet) || 0,
+            psilocybeVert: Number(data.psilocybeVert) || 0
         };
 
     } catch (e) {
-        stock = { sporex: 0, heroine: 0, argentSale: 0 };
+        stock = {
+            sporex: 0,
+            heroine: 0,
+            argentSale: 0,
+            psilocybeRouge: 0,
+            psilocybeViolet: 0,
+            psilocybeVert: 0
+        };
     }
 }
 
