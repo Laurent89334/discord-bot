@@ -37,10 +37,13 @@ const ALLOWED_COMMAND_CHANNEL_ID = "1508485239683416195";
 // ===== STOCK =====
 const FILE = "./stock.json";
 
-let stock = {
-    sporex: 0,
-    heroine: 0,
-    argentSale: 0
+stock = {
+    sporex: Number(data.sporex) || 0,
+    heroine: Number(data.heroine) || 0,
+    argentSale: Number(data.argentSale || data.argentsale) || 0,
+    psilocybeRouge: Number(data.psilocybeRouge) || 0,
+    psilocybeViolet: Number(data.psilocybeViolet) || 0,
+    psilocybeVert: Number(data.psilocybeVert) || 0
 };
 
 if (fs.existsSync(FILE)) {
@@ -95,7 +98,10 @@ const commands = [
                 .addChoices(
                     { name: "SporeX", value: "sporex" },
                     { name: "Heroine", value: "heroine" },
-                    { name: "Argent Sale", value: "argentSale" }
+                    { name: "Argent Sale", value: "argentSale" },
+                    { name: "Psilocybe Rouge", value: "psilocybeRouge" },
+                    { name: "Psilocybe Violet", value: "psilocybeViolet" },
+                    { name: "Psilocybe Vert", value: "psilocybeVert" }
                 )
         )
         .addIntegerOption(o =>
@@ -114,7 +120,10 @@ const commands = [
                 .addChoices(
                     { name: "SporeX", value: "sporex" },
                     { name: "Heroine", value: "heroine" },
-                    { name: "Argent Sale", value: "argentSale" }
+                    { name: "Argent Sale", value: "argentSale" },
+                    { name: "Psilocybe Rouge", value: "psilocybeRouge" },
+                    { name: "Psilocybe Violet", value: "psilocybeViolet" },
+                    { name: "Psilocybe Vert", value: "psilocybeVert" }
                 )
         )
         .addIntegerOption(o =>
@@ -222,6 +231,9 @@ changed = true;
         `💊 SporeX: **${Number(stock.sporex) || 0}**`,
         `🧪 Heroine: **${Number(stock.heroine) || 0}**`,
         `💰 Argent Sale: **${Number(stock.argentSale) || 0}**`
+        `🍄 Psilocybe Rouge: **${Number(stock.psilocybeRouge) || 0}**`,
+        `🍄 Psilocybe Violet: **${Number(stock.psilocybeViolet) || 0}**`,
+        `🍄 Psilocybe Vert: **${Number(stock.psilocybeVert) || 0}**`
     ].join("\n")
 )
             ]
