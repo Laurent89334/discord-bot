@@ -37,30 +37,29 @@ const ALLOWED_COMMAND_CHANNEL_ID = "1508485239683416195";
 // ===== STOCK =====
 const FILE = "./stock.json";
 
-stock = {
-    sporex: Number(data.sporex) || 0,
-    heroine: Number(data.heroine) || 0,
-    argentSale: Number(data.argentSale || data.argentsale) || 0,
-    psilocybeRouge: Number(data.psilocybeRouge) || 0,
-    psilocybeViolet: Number(data.psilocybeViolet) || 0,
-    psilocybeVert: Number(data.psilocybeVert) || 0
+let stock = {
+    sporex: 0,
+    heroine: 0,
+    argentSale: 0,
+    psilocybeRouge: 0,
+    psilocybeViolet: 0,
+    psilocybeVert: 0
 };
 
 if (fs.existsSync(FILE)) {
     try {
-        const raw = fs.readFileSync(FILE);
-        const data = JSON.parse(raw);
+        const data = JSON.parse(fs.readFileSync(FILE, "utf8"));
 
-        stock = {
-            sporex: Number(data.sporex) || 0,
-            heroine: Number(data.heroine) || 0,
-            argentSale: Number(data.argentSale || data.argentsale) || 0,
-            psilocybeRouge: Number(data.psilocybeRouge) || 0,
-            psilocybeViolet: Number(data.psilocybeViolet) || 0,
-            psilocybeVert: Number(data.psilocybeVert) || 0
-        };
+        stock.sporex = Number(data.sporex) || 0;
+        stock.heroine = Number(data.heroine) || 0;
+        stock.argentSale = Number(data.argentSale || data.argentsale) || 0;
+        stock.psilocybeRouge = Number(data.psilocybeRouge) || 0;
+        stock.psilocybeViolet = Number(data.psilocybeViolet) || 0;
+        stock.psilocybeVert = Number(data.psilocybeVert) || 0;
 
     } catch (e) {
+        console.log("Erreur JSON stock, reset automatique");
+
         stock = {
             sporex: 0,
             heroine: 0,
