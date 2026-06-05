@@ -39,7 +39,7 @@ const FILE = "./stock.json";
 
 let stock = {
     sporex: 0,
-    heroine: 0,
+    mexicana: 0,
     argentSale: 0,
     psilocybeRouge: 0,
     psilocybeViolet: 0,
@@ -51,7 +51,7 @@ if (fs.existsSync(FILE)) {
         const data = JSON.parse(fs.readFileSync(FILE, "utf8"));
 
         stock.sporex = Number(data.sporex) || 0;
-        stock.heroine = Number(data.heroine) || 0;
+        stock.mexicana = Number(data.mexicana) || 0;
         stock.argentSale = Number(data.argentSale || data.argentsale) || 0;
         stock.psilocybeRouge = Number(data.psilocybeRouge) || 0;
         stock.psilocybeViolet = Number(data.psilocybeViolet) || 0;
@@ -62,7 +62,7 @@ if (fs.existsSync(FILE)) {
 
         stock = {
             sporex: 0,
-            heroine: 0,
+            mexicana: 0,
             argentSale: 0,
             psilocybeRouge: 0,
             psilocybeViolet: 0,
@@ -107,7 +107,7 @@ const commands = [
                 .setRequired(true)
                 .addChoices(
                     { name: "SporeX", value: "sporex" },
-                    { name: "Heroine", value: "heroine" },
+                    { name: "Mexicana", value: "mexicana" },
                     { name: "Argent Sale", value: "argentSale" },
                     { name: "Psilocybe Rouge", value: "psilocybeRouge" },
                     { name: "Psilocybe Violet", value: "psilocybeViolet" },
@@ -129,7 +129,7 @@ const commands = [
                 .setRequired(true)
                 .addChoices(
                     { name: "SporeX", value: "sporex" },
-                    { name: "Heroine", value: "heroine" },
+                    { name: "Mexicana", value: "mexicana" },
                     { name: "Argent Sale", value: "argentSale" },
                     { name: "Psilocybe Rouge", value: "psilocybeRouge" },
                     { name: "Psilocybe Violet", value: "psilocybeViolet" },
@@ -195,7 +195,7 @@ const handle = (text) => {
 
     // 💊 ITEMS CLASSIQUES
     if (itemText.includes("sporex")) item = "sporex";
-    else if (itemText.includes("heroine")) item = "heroine";
+    else if (itemText.includes("mexicana")) item = "mexicana";
     else if (itemText.includes("argent")) item = "argentSale";
 
     // 🍄 PSILOCYBES (FIX IMPORTANT)
@@ -255,7 +255,7 @@ if (message.embeds?.length) {
                     .setDescription(
                         [
                             `💊 SporeX: **${stock.sporex || 0}**`,
-                            `🧪 Heroine: **${stock.heroine || 0}**`,
+                            `🧪 Mexicana: **${stock.mexicana || 0}**`,
                             `💰 Argent Sale: **${stock.argentSale || 0}**`,
                             `🍄 Psilocybe Rouge: **${stock.psilocybeRouge || 0}**`,
                             `🍄 Psilocybe Violet: **${stock.psilocybeViolet || 0}**`,
@@ -284,7 +284,7 @@ if (interaction.commandName === "stock") {
 
     const freshStock = {
         sporex: Number(stock.sporex) || 0,
-        heroine: Number(stock.heroine) || 0,
+        mexicana: Number(stock.mexicana) || 0,
         argentSale: Number(stock.argentSale) || 0,
         psilocybeRouge: Number(stock.psilocybeRouge) || 0,
         psilocybeViolet: Number(stock.psilocybeViolet) || 0,
@@ -298,7 +298,7 @@ if (interaction.commandName === "stock") {
                 .setColor(0x00ff99)
                 .addFields(
                     { name: "💊 SporeX", value: `${freshStock.sporex}`, inline: true },
-                    { name: "🧪 Heroine", value: `${freshStock.heroine}`, inline: true },
+                    { name: "🧪 Mexicana", value: `${freshStock.mexicana}`, inline: true },
                     { name: "💰 Argent Sale", value: `${freshStock.argentSale}`, inline: true },
                     { name: "🍄 Psilocybe Rouge", value: `${freshStock.psilocybeRouge}`, inline: true },
                     { name: "🍄 Psilocybe Violet", value: `${freshStock.psilocybeViolet}`, inline: true },
